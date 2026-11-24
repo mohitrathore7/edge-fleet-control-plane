@@ -1,0 +1,41 @@
+syntax = "proto3";
+package fleet.v1;
+
+// gRPC surface of the control plane, used by backend services / CLI tools.
+service FleetService {
+  rpc ListDevices(ListDevicesRequest) returns (ListDevicesResponse);
+  rpc GetDevice(GetDeviceRequest) returns (Device);
+  rpc SendCommand(CommandRequest) returns (CommandResponse);
+  rpc WatchTelemetry(WatchTelemetryRequest) returns (stream Telemetry);
+}
+
+message ListDevicesRequest { string status = 1; }
+message ListDevicesResponse { repeated Device devices = 1; }
+message GetDeviceRequest { string device_id = 1; }
+
+message Device {
+  string device_id = 1;
+  string arch = 2;
+  string hw_class = 3;
+  string status = 4;
+  string desired_firmware = 5;
+  string reported_firmware = 6;
+  double last_seen = 7;
+}
+
+message CommandRequest {
+  string device_id = 1;
+  string action = 2;            // reboot | set_config | ota_update
+  map<string, string> args = 3;
+}
+message CommandResponse { string command_id = 1; bool accepted = 2; }
+
+message WatchTelemetryRequest { string device_id = 1; }  // empty = whole fleet
+message Telemetry {
+  string device_id = 1;
+  double ts = 2;
+  double cpu_pct = 3;
+  double mem_pct = 4;
+  double temp_c = 5;
+  double inference_ms = 6;
+}

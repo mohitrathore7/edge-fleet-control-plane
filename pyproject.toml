@@ -1,0 +1,15 @@
+[project]
+name = "edge-fleet-control-plane"
+version = "0.1.0"
+description = "Cloud control plane for edge AI devices: registry, telemetry, commands, staged OTA, RAG diagnostics"
+requires-python = ">=3.10"
+
+[tool.ruff]
+line-length = 120
+extend-exclude = ["fleetctl/pb"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]

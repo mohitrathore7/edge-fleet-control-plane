@@ -1,0 +1,21 @@
+services:
+  mqtt:
+    image: eclipse-mosquitto:2
+    ports: ["1883:1883"]
+    volumes: ["./deploy/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro"]
+
+  control-plane:
+    build: .
+    environment:
+      BUS: mqtt
+      MQTT_HOST: mqtt
+      LLM_API_KEY: ${LLM_API_KEY:-}
+    ports: ["8000:8000", "50051:50051"]
+    depends_on: [mqtt]
+
+  simulator:
+    build: .
+    command: ["python", "-m", "simulator", "--devices", "120"]
+    environment:
+      MQTT_HOST: mqtt
+    depends_on: [mqtt, control-plane]

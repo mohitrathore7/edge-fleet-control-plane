@@ -1,0 +1,36 @@
+name: ci
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "${{ matrix.python }}" }
+      - run: pip install -r requirements-dev.txt
+      - run: ruff check .
+      - name: proto stubs are up to date
+        run: |
+          python -m grpc_tools.protoc -Iproto --python_out=/tmp --grpc_python_out=/tmp proto/fleet.proto
+          sed -i 's/^import fleet_pb2/from . import fleet_pb2/' /tmp/fleet_pb2_grpc.py
+          diff -q <(grep -v '^# Protobuf Python Version' /tmp/fleet_pb2.py) <(grep -v '^# Protobuf Python Version' fleetctl/pb/fleet_pb2.py) || echo "::warning::regenerate stubs with scripts/gen_proto.sh"
+      - run: pytest -q
+
+  image:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: build linux/amd64 + linux/arm64
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: false
+          tags: edge-fleet-control-plane:${{ github.sha }}
